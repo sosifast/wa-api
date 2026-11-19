@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Level {
+  Member
+  Admin
+}
+
+enum Status {
+  Active
+  In_Active @map("In-Active")
+}
+
+model User {
+  id                Int               @id @default(autoincrement())
+  uuid              String            @unique @default(uuid())
+  full_name         String
+  username          String            @unique
+  email             String            @unique
+  password          String
+  level             Level             @default(Member)
+  status            Status            @default(Active)
+  create_at         DateTime          @default(now())
+  update_at         DateTime          @updatedAt
+  whatsapp_accounts WhatsappAccount[]
+
+  @@map("user")
+}
+
+enum WhatsappStatus {
+  DISCONNECTED
+  CONNECTING
+  CONNECTED
+}
+
+model WhatsappAccount {
+  id           Int               @id @default(autoincrement())
+  uuid         String            @unique @default(uuid())
+  user_id      Int?
+  user         User?             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name         String
+  phone_number String?
+  jid          String?
+  status       WhatsappStatus    @default(DISCONNECTED)
+  qr           String?           @db.Text
+  create_at    DateTime          @default(now())
+  update_at    DateTime          @updatedAt
+  sessions     WhatsappSession[]
+
+  @@map("whatsapp_account")
+}
+
+model WhatsappSession {
+  id         Int             @id @default(autoincrement())
+  account_id Int
+  account    WhatsappAccount @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  session_id String
+  data       String          @db.Text
+  create_at  DateTime        @default(now())
+  update_at  DateTime        @updatedAt
+
+  @@unique([account_id, session_id])
+  @@map("whatsapp_session")
+}
